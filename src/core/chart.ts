@@ -285,6 +285,30 @@ export class Chart {
   }
 
   /**
+   * genea : remplace le calcul de l'arbre par une mise en page externe.
+   * @param layoutFunction - Fonction (data, main_id) => Tree, liens compris (Tree.links).
+   * @returns The CreateChart instance
+   */
+  setLayoutFunction(layoutFunction: NonNullable<ST.StoreState['layoutFunction']>) {
+    this.store.state.layoutFunction = layoutFunction
+    return this
+  }
+
+  /**
+   * genea : rendu SVG libre des cartes (appelé avec this = g.card_cont).
+   * @param renderer - Fonction de rendu d'une carte.
+   * @returns The CreateChart instance
+   */
+  setCardSvgRenderer(renderer: (this: SVGGElement, d: TreeDatum) => void) {
+    const htmlSvg = this.cont!.querySelector('#htmlSvg') as HTMLElement
+    if (htmlSvg) htmlSvg.style.display = 'none'
+    this.is_card_html = false
+    this.svg.querySelector('.cards_view')!.innerHTML = ''
+    this.getCard = () => renderer as unknown as (d: TreeDatum) => void
+    return this
+  }
+
+  /**
    * Set the transition time
    * @param transition_time - The transition time in milliseconds
    * @returns The CreateChart instance

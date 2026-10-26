@@ -7,11 +7,10 @@ import { Link } from "../layout/create-links"
 import { LinkSelection } from "../types/view"
 
 export default function updateLinks(svg: SVGElement, tree: Tree, props: ViewProps = {}) {
-  const links_data_dct = tree.data.reduce((acc: Record<string, Link>, d) => {
+  const links_data: Link[] = tree.links ?? Object.values(tree.data.reduce((acc: Record<string, Link>, d) => {
     createLinks(d, tree.is_horizontal).forEach(l => acc[l.id] = l)
     return acc
-  }, {})
-  const links_data: Link[] = Object.values(links_data_dct)
+  }, {}))
   const link: LinkSelection = d3
     .select(svg)
     .select(".links_view")

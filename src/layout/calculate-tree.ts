@@ -5,6 +5,7 @@ import { isAllRelativeDisplayed } from "../handlers/general";
 import { handleDuplicateSpouseToggle, handleDuplicateHierarchyProgeny } from "../features/duplicates-toggle/duplicates-progeny";
 import { handleDuplicateHierarchyAncestry } from "../features/duplicates-toggle/duplicates-ancestry";
 import type { Datum, Data } from "../types/data";
+import type { Link } from "./create-links";
 import type { TreeDatum, TreeData } from "../types/treeData";
 
 interface HN extends d3.HierarchyNode<Datum> {}
@@ -33,6 +34,8 @@ export interface Tree {
   dim: { width: number; height: number; x_off: number; y_off: number };
   main_id: string;
   is_horizontal: boolean;
+  /** genea : liens précalculés par une mise en page externe (remplacent createLinks). */
+  links?: Link[];
 }
 
 

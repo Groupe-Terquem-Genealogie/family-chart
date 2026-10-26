@@ -25,6 +25,8 @@ export interface StoreState extends CalculateTreeOptions {
   main_id_history?: Datum['id'][];
   tree?: Tree;
   legacy_format?: boolean;
+  /** genea : mise en page externe, appelée à la place de calculateTree. */
+  layoutFunction?: (data: Data, main_id: Datum['id'] | null) => Tree;
 
   transition_time?: TransitionTime;
   single_parent_empty_card_label?: SingleParentEmptyCardLabel;

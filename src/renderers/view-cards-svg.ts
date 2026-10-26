@@ -10,7 +10,7 @@ export default function updateCardsSvg(svg: SVGElement, tree: Tree, Card: any, p
     .select(svg)
     .select(".cards_view")
     .selectAll<SVGGElement, TreeDatum>("g.card_cont")
-    .data(tree.data, d => (d as TreeDatum).data.id)
+    .data(tree.data, d => (d as TreeDatum).tid ?? (d as TreeDatum).data.id)
 
   const card_exit = card.exit()
   const card_enter = card.enter().append("g").attr("class", "card_cont")

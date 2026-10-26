@@ -50,6 +50,7 @@ export default function createStore(initial_state: StoreState): Store {
   return store
 
   function calcTree(): Tree {
+    if (state.layoutFunction) return state.layoutFunction(state.data, state.main_id)
     const args: CalculateTreeOptions = {
       main_id: state.main_id,
     };
