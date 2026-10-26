@@ -17,7 +17,7 @@ export interface Boite {
   contenu: ContenuCarte
   ascendant: boolean
 }
-export interface Lien { cle: string; points: [number, number][] }
+export interface Lien { cle: string; parentCle: string; points: [number, number][] }
 export interface Disposition { boites: Boite[]; liens: Lien[]; largeur: number; hauteur: number; centreCle: string }
 
 export const ECARTS = { horizontal: 24, vertical: 36 }
@@ -152,7 +152,7 @@ export function disposer(arbre: Arbre, centreId: string, replies?: ReadonlySet<s
       const px = b.x + mesure.largeur / 2, py = y + mesure.hauteurDessus + mesure.hauteurBoite
       const cx = be.x + be.mesure.largeur / 2, cy = be.y + be.mesure.hauteurDessus
       const mi = yEnfants - ECARTS.vertical / 2
-      liens.push({ cle: be.cle, points: [[px, py], [px, mi], [cx, mi], [cx, cy]] })
+      liens.push({ cle: be.cle, parentCle: b.cle, points: [[px, py], [px, mi], [cx, mi], [cx, cy]] })
     }
     return b
   }

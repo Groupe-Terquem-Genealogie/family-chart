@@ -51,6 +51,7 @@ function createPath(d: Link, is_: boolean = false) {
   const lineCurve = d3.line().curve(d3.curveBasis)
   const path_data: [number, number][] = is_ ? d._d() : d.d
 
+  if (d.linear) return d3.line()(path_data)
   if (!d.curve) return line(path_data)
   else return lineCurve(path_data)
 }

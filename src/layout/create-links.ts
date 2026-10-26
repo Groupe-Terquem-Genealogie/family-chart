@@ -5,6 +5,8 @@ export interface Link {
   d: [number, number][]
   _d: () => [number, number][]
   curve: boolean
+  /** genea : polyligne à segments droits (pas de lissage). */
+  linear?: boolean
   id: string
   depth: number
   is_ancestry: boolean | undefined

@@ -1,0 +1,33 @@
+/* genea_visu : page plein écran, arbre SVG, barre d'outils et panneau de fiche. */
+.gv-page { position: fixed; inset: 0; display: flex; flex-direction: column; font: 13px/1.4 Arial, sans-serif; color: #111; background: #fff; }
+.gv-arbre { position: relative; flex: 1; min-height: 0; background: #fff; }
+.gv-arbre .f3 { width: 100%; height: 100%; }
+.gv-arbre svg.main_svg { width: 100%; height: 100%; background: #fff; }
+
+/* Cartes */
+.gv-texte { font: 11px Arial, sans-serif; }
+.gv-halo { paint-order: stroke; stroke: #fff; stroke-width: 3px; stroke-linejoin: round; }
+.gv-croix { font: bold 24px Arial, sans-serif; fill: #111; }
+g.card_cont { cursor: pointer; }
+.gv-replier { cursor: pointer; font: bold 12px Arial, sans-serif; }
+.links_view path.link { fill: none; stroke: #333; stroke-width: 1; }
+
+/* Barre d'outils */
+.gv-barre { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 6px 10px; border-bottom: 1px solid #ccc; background: #f6f6f6; }
+.gv-barre select, .gv-barre input, .gv-barre button { font: inherit; padding: 3px 6px; }
+.gv-recherche { position: relative; }
+.gv-resultats { position: absolute; top: 100%; left: 0; z-index: 10; min-width: 320px; max-height: 60vh; overflow: auto; margin: 0; padding: 0; list-style: none; background: #fff; border: 1px solid #aaa; box-shadow: 0 2px 6px rgba(0,0,0,.2); }
+.gv-resultats li { padding: 4px 8px; cursor: pointer; }
+.gv-resultats li:hover, .gv-resultats li[aria-selected="true"] { background: #e8f0fb; }
+.gv-etat { margin-left: auto; color: #555; }
+.gv-etat.gv-erreur, .gv-bandeau { color: #9b1c1c; font-weight: bold; }
+
+/* Panneau de fiche */
+.gv-panneau { position: absolute; top: 0; right: 0; bottom: 0; width: 380px; overflow: auto; padding: 10px 12px; background: #fff; border-left: 1px solid #ccc; box-shadow: -2px 0 6px rgba(0,0,0,.1); }
+.gv-panneau[hidden] { display: none; }
+.gv-panneau fieldset { border: 1px solid #ddd; margin: 0 0 10px; padding: 6px 8px; }
+.gv-panneau legend { font-weight: bold; }
+.gv-panneau label { display: block; margin: 3px 0; }
+.gv-panneau label span { display: inline-block; width: 120px; color: #444; }
+.gv-panneau input, .gv-panneau select { width: 210px; font: inherit; }
+.gv-panneau .gv-actions { display: flex; flex-wrap: wrap; gap: 6px; }
