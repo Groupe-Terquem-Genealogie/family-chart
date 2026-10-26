@@ -49,6 +49,7 @@ export function appliquerJournal(base: Arbre, journal: Journal): Arbre {
         if (!p) { ignorer('personne', op.personneId); break }
         const { champs, ...reste } = copie(op.valeurs)
         Object.assign(p, reste)
+        viderEvenements(p, ['naissance', 'deces'].filter(k => k in op.valeurs))
         for (const [k, v] of Object.entries(champs ?? {}) as [CleChamp, string][]) {
           if (v === '') delete p.champs[k]
           else p.champs[k] = v
@@ -73,6 +74,7 @@ export function appliquerJournal(base: Arbre, journal: Journal): Arbre {
         const u = a.unions.get(op.unionId)
         if (!u) { ignorer('union', op.unionId); break }
         Object.assign(u, copie(op.valeurs))
+        viderEvenements(u, ['mariage', 'divorce'].filter(k => k in op.valeurs))
         break
       }
       case 'supprimerUnion':
@@ -82,6 +84,12 @@ export function appliquerJournal(base: Arbre, journal: Journal): Arbre {
   }
   recalculerLiens(a)
   return a
+}
+
+/** Un événement sans date ni lieu envoyé par une modification signifie « supprimé ». */
+function viderEvenements(o: object, cles: string[]) {
+  const r = o as Record<string, { date?: string; lieu?: string } | undefined>
+  for (const k of cles) if (k in r && (!r[k] || (!r[k]!.date && !r[k]!.lieu))) delete r[k]
 }
 
 /** famc/fams déduits des unions (seule source de vérité) ; références absentes retirées. */

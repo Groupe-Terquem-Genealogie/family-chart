@@ -48,6 +48,20 @@ describe('journal', () => {
     expect(p.champs.adresse).toBe('12 rue X')
   })
 
+  it('un événement vidé (ni date ni lieu) est supprimé', () => {
+    const r = appliquerJournal(base(), avec({ type: 'modifierPersonne', personneId: '@I1@', valeurs: { deces: {} } }))
+    expect(r.personnes.get('@I1@')!.deces).toBeUndefined()
+    const u = appliquerJournal(base(), avec({ type: 'modifierUnion', unionId: '@F2@', valeurs: { divorce: {} } }))
+    expect(u.unions.get('@F2@')!.divorce).toBeUndefined()
+  })
+
+  it("un décès sans date venu du GEDCOM survit à la modification d'un autre champ", () => {
+    const a = base()
+    a.personnes.get('@I3@')!.deces = {}
+    const r = appliquerJournal(a, avec({ type: 'modifierPersonne', personneId: '@I3@', valeurs: { champs: { profession: 'X' } } }))
+    expect(r.personnes.get('@I3@')!.deces).toEqual({})
+  })
+
   it('ajouter un enfant', () => {
     const r = appliquerJournal(base(), avec(
       { type: 'ajouterPersonne', personne: personne('@GV-I-1@') },
