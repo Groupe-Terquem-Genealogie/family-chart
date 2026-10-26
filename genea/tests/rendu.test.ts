@@ -47,6 +47,23 @@ describe('creerVue', () => {
     expect(chemin).toMatch(/^M[\d.,-]+(L[\d.,-]+)+$/)       // segments droits uniquement
   })
 
+  it('les textes hors de la case ont un halo (les liens passent derrière sans les barrer)', () => {
+    const { cont, vue } = monter()
+    vue.afficher(D, true)
+    const mention = [...carte(cont, C).querySelectorAll('text')].find(t => t.textContent!.startsWith('M '))!
+    expect(mention.classList.contains('gv-halo')).toBe(true)
+    expect(carte(cont, D).querySelector('text.gv-croix')!.classList.contains('gv-halo')).toBe(true)
+  })
+
+  it('afficher met la personne centrale en évidence (recherche, bouton Défunt)', () => {
+    const { cont, vue } = monter()
+    vue.afficher(D, true)
+    carte(cont, E2).dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    vue.afficher(H)
+    expect(carte(cont, H).classList.contains('gv-selection')).toBe(true)
+    expect(carte(cont, E2).classList.contains('gv-selection')).toBe(false)
+  })
+
   it('clic : sélection et recentrage sur la personne', () => {
     const { cont, vue } = monter()
     const vu = vi.fn()

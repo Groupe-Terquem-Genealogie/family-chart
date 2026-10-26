@@ -77,8 +77,8 @@ export function creerVue(conteneur: HTMLElement, obtenirArbre: () => Arbre, opti
         .attr('font-weight', ligne.gras ? 'bold' : null).attr('class', 'gv-texte').text(ligne.texte)
 
     if (c.defunt) g.append('text').attr('x', 0).attr('y', hautBoite - c.dessus.length * il - 6)
-      .attr('text-anchor', 'middle').attr('class', 'gv-croix').text('✝')
-    c.dessus.forEach((ln, i) => texte(hautBoite - (c.dessus.length - i) * il + il - 3, ln))
+      .attr('text-anchor', 'middle').attr('class', 'gv-croix gv-halo').text('✝')
+    c.dessus.forEach((ln, i) => texte(hautBoite - (c.dessus.length - i) * il + il - 3, ln).attr('class', 'gv-texte gv-halo'))
     g.append('rect').attr('class', 'gv-boite').attr('data-personne', b.personneId)
       .attr('x', gauche).attr('y', hautBoite).attr('width', l).attr('height', hb)
       .attr('rx', c.role === 'conjoint' ? 8 : 0)
@@ -111,6 +111,7 @@ export function creerVue(conteneur: HTMLElement, obtenirArbre: () => Arbre, opti
   const vue: Vue = {
     afficher(centreId, initial = false) {
       centre = centreId
+      selection = centreId
       rafraichir(initial ? { initial: true } : { tree_position: 'main_to_middle', scale: 0.8 })
     },
     ajuster() { rafraichir({ tree_position: 'fit' }) },
