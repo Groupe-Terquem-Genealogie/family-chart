@@ -68,13 +68,36 @@ describe('contenuCarte', () => {
   })
 })
 
+describe('hauteur de case constante', () => {
+  it('même hauteur de case quel que soit le contenu', () => {
+    const vide = mesurer(contenuCarte(pers({}), 'lignee'))
+    const pleine = mesurer(contenuCarte(pers({ naissance: { date: '13 JAN 1866', lieu: ', Saint Leu, 974, , ,' }, deces: { date: '1924' } }), 'conjoint',
+      { id: '@F1@', conjoints: [], enfants: [], divorce: { date: '1960' } }))
+    expect(vide.hauteurBoite).toBe(pleine.hauteurBoite)
+    expect(CARTE.lignesBoite).toBe(4)
+  })
+  it('dans la case, une ligne trop longue est raccourcie, pas coupée', () => {
+    const c = contenuCarte(pers({ nom: 'NOMCOMPOSE FICTIF DE LA GRANDE FAMILLE', prenoms: 'Paul Louis Marie Joseph' }), 'lignee')
+    expect(c.boite.length).toBe(1)
+    expect(c.boite[0].texte.length).toBeLessThanOrEqual(CARTE.carMaxParLigne)
+    expect(c.boite[0].texte.endsWith('…')).toBe(true)
+  })
+  it('plus de lignes que la case : « voir aussi » passe dessous', () => {
+    const c = contenuCarte(pers({ naissance: { date: '1900' }, deces: { date: '1980' } }), 'conjoint',
+      { id: '@F1@', conjoints: [], enfants: [], divorce: { date: '1960' } }, true)
+    expect(c.boite.length).toBe(4)
+    expect(c.boite.map(l => l.texte)).not.toContain('voir aussi')
+    expect(c.dessous[0].texte).toBe('voir aussi')
+  })
+})
+
 describe('mesurer', () => {
   it('hauteurs', () => {
     const c = contenuCarte(pers({ champs: { representation: 'R', profession: 'P', adresse: 'A' } }), 'lignee')
     const m = mesurer(c)
     expect(m.largeur).toBe(200)
     expect(m.hauteurDessus).toBe(14)
-    expect(m.hauteurBoite).toBe(c.boite.length * 14 + 2 * 4)
+    expect(m.hauteurBoite).toBe(CARTE.lignesBoite * 14 + 2 * 4)
     expect(m.hauteurTotale).toBe(m.hauteurDessus + m.hauteurBoite + c.dessous.length * 14)
   })
   it('défunt : place de la croix', () => {

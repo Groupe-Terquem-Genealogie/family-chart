@@ -18,7 +18,8 @@ export interface ContenuCarte {
 }
 export interface Mesure { largeur: number; hauteurDessus: number; hauteurBoite: number; hauteurTotale: number }
 
-export const CARTE = { largeur: 200, interligne: 14, marge: 4, croix: 28, carMaxParLigne: 34 }
+/** lignesBoite : hauteur fixe des cases (nom, naissance, décès, divorce ou « voir aussi »), comme Généatique. */
+export const CARTE = { largeur: 200, interligne: 14, marge: 4, croix: 28, carMaxParLigne: 34, lignesBoite: 4 }
 
 const MOIS: Record<string, string> = { JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
   JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12' }
@@ -53,6 +54,12 @@ export function couper(texte: string, max = CARTE.carMaxParLigne): string[] {
   return lignes
 }
 
+/** Une seule ligne, raccourcie par « … » si elle dépasse la largeur de la case. */
+function raccourcir(texte: string, max = CARTE.carMaxParLigne): string {
+  const t = texte.replace(/\s+/g, ' ').trim()
+  return t.length <= max ? t : t.slice(0, max - 1).trimEnd() + '…'
+}
+
 const evenement = (prefixe: string, date?: string, lieu?: string) =>
   [prefixe, formaterDate(date), formaterLieu(lieu)].filter(Boolean).join(' ')
 
@@ -71,19 +78,24 @@ export function contenuCarte(p: Personne, role: Role, unionEntree?: Union, doubl
   if (role === 'conjoint' && unionEntree?.mariage) dessus.push(...lignes([evenement('M', unionEntree.mariage.date, unionEntree.mariage.lieu)], 'noir'))
 
   const nom = [p.nom, p.prenoms].filter(Boolean).join(' ') || '(sans nom)'
-  const boite = lignes([nom], 'noir', true)
-  if (p.naissance) boite.push(...lignes([evenement('N', p.naissance.date, p.naissance.lieu)], 'noir'))
-  if (p.deces) boite.push(...lignes([evenement('✝', p.deces.date, p.deces.lieu)], 'noir'))
-  if (role === 'conjoint' && unionEntree?.divorce) boite.push(...lignes([evenement('Divorce', unionEntree.divorce.date, unionEntree.divorce.lieu)], 'noir'))
-  if (doublon) boite.push({ texte: 'voir aussi', teinte: 'noir' })
+  const boite: Ligne[] = [{ texte: raccourcir(nom), teinte: 'noir', gras: true }]
+  const ligneBoite = (texte: string) => boite.push({ texte: raccourcir(texte), teinte: 'noir' })
+  if (p.naissance) ligneBoite(evenement('N', p.naissance.date, p.naissance.lieu))
+  if (p.deces) ligneBoite(evenement('✝', p.deces.date, p.deces.lieu))
+  if (role === 'conjoint' && unionEntree?.divorce) ligneBoite(evenement('Divorce', unionEntree.divorce.date, unionEntree.divorce.lieu))
 
   const dessous = [...lignes(champs(NOIRS), 'noir'), ...lignes(champs(VERTS), 'vert')]
+  const voirAussi: Ligne = { texte: 'voir aussi', teinte: 'noir' }
+  if (doublon) {
+    if (boite.length < CARTE.lignesBoite) boite.push(voirAussi)
+    else dessous.unshift(voirAussi)
+  }
   return { dessus, boite, dessous, heritier: estHeritier(p), defunt: p.defunt, role, doublon }
 }
 
 export function mesurer(c: ContenuCarte): Mesure {
   const hauteurDessus = c.dessus.length * CARTE.interligne + (c.defunt ? CARTE.croix : 0)
-  const hauteurBoite = c.boite.length * CARTE.interligne + 2 * CARTE.marge
+  const hauteurBoite = CARTE.lignesBoite * CARTE.interligne + 2 * CARTE.marge
   return { largeur: CARTE.largeur, hauteurDessus, hauteurBoite,
     hauteurTotale: hauteurDessus + hauteurBoite + c.dessous.length * CARTE.interligne }
 }
