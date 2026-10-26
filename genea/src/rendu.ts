@@ -8,7 +8,7 @@ import type { Tree } from '../../src/layout/calculate-tree'
 import type { Link } from '../../src/layout/create-links'
 import { Arbre } from './modele'
 import { Boite, disposer, Disposition } from './disposition'
-import { CARTE, Teinte } from './carte'
+import { CARTE, Ligne, Teinte } from './carte'
 
 export const COULEURS = { heritier: '#a9c8ee', fond: '#ffffff', trait: '#333333',
   noir: '#111111', vert: '#2a8a2a', rouge: '#9b1c1c', selection: '#e07b00' }
@@ -72,9 +72,12 @@ export function creerVue(conteneur: HTMLElement, obtenirArbre: () => Arbre, opti
     g.classed('gv-selection', b.personneId === selection)
     const l = CARTE.largeur, hb = m.hauteurBoite, il = CARTE.interligne
     const gauche = -l / 2, hautBoite = -hb / 2
-    const texte = (y: number, ligne: { texte: string; teinte: Teinte; gras?: boolean }, x = gauche + CARTE.marge) =>
-      g.append('text').attr('x', x).attr('y', y).attr('fill', TEINTES[ligne.teinte])
+    const texte = (y: number, ligne: Ligne, x = gauche + CARTE.marge) => {
+      const t = g.append('text').attr('x', x).attr('y', y).attr('fill', TEINTES[ligne.teinte])
         .attr('font-weight', ligne.gras ? 'bold' : null).attr('class', 'gv-texte').text(ligne.texte)
+      if (ligne.complet) t.append('title').text(ligne.complet)   // infobulle du texte raccourci
+      return t
+    }
 
     if (c.defunt) g.append('text').attr('x', 0).attr('y', hautBoite - c.dessus.length * il - 6)
       .attr('text-anchor', 'middle').attr('class', 'gv-croix gv-halo').text('✝')

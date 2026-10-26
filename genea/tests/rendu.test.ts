@@ -55,6 +55,20 @@ describe('creerVue', () => {
     expect(carte(cont, D).querySelector('text.gv-croix')!.classList.contains('gv-halo')).toBe(true)
   })
 
+  it('texte raccourci : infobulle avec le texte complet', () => {
+    const cont = document.createElement('div')
+    document.body.innerHTML = ''
+    document.body.appendChild(cont)
+    const arbre = remariage()
+    arbre.personnes.get(H)!.prenoms = 'Hélène Marie Josèphe Antoinette Philomène'
+    const vue = creerVue(cont, () => arbre, { transition: 0 })
+    vue.afficher(D, true)
+    const nom = carte(cont, H).querySelector('text')!
+    const t = [...carte(cont, H).querySelectorAll('text')].find(x => x.textContent!.includes('…'))!
+    expect(t.querySelector('title')!.textContent).toBe('EPOUX Hélène Marie Josèphe Antoinette Philomène')
+    expect(nom).toBeTruthy()
+  })
+
   it('afficher met la personne centrale en évidence (recherche, bouton Défunt)', () => {
     const { cont, vue } = monter()
     vue.afficher(D, true)

@@ -88,6 +88,8 @@ describe('hauteur de case constante', () => {
     expect(c.boite.length).toBe(1)
     expect(c.boite[0].texte.length).toBeLessThanOrEqual(CARTE.carMaxParLigne)
     expect(c.boite[0].texte.endsWith('…')).toBe(true)
+    expect(c.boite[0].complet).toBe('NOMCOMPOSE FICTIF DE LA GRANDE FAMILLE Paul Louis Marie Joseph')
+    expect(contenuCarte(pers({}), 'lignee').boite[0].complet).toBeUndefined()
   })
   it('plus de lignes que la case : « voir aussi » passe dessous', () => {
     const c = contenuCarte(pers({ naissance: { date: '1900' }, deces: { date: '1980' } }), 'conjoint',

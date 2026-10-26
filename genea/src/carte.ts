@@ -5,7 +5,8 @@ import { CleChamp, estHeritier, Personne, Union } from './modele'
 import { dateVersAffichage } from './dates'
 
 export type Teinte = 'noir' | 'vert' | 'rouge'
-export interface Ligne { texte: string; teinte: Teinte; gras?: boolean }
+/** complet : texte entier quand texte a été raccourci par « … » (affiché en infobulle). */
+export interface Ligne { texte: string; teinte: Teinte; gras?: boolean; complet?: string }
 export type Role = 'lignee' | 'conjoint'
 export interface ContenuCarte {
   dessus: Ligne[]
@@ -74,8 +75,12 @@ export function contenuCarte(p: Personne, role: Role, unionEntree?: Union, doubl
   if (role === 'conjoint' && unionEntree?.mariage) dessus.push(...lignes([evenement('M', unionEntree.mariage.date, unionEntree.mariage.lieu)], 'noir'))
 
   const nom = [p.nom, p.prenoms].filter(Boolean).join(' ') || '(sans nom)'
-  const boite: Ligne[] = [{ texte: raccourcir(nom), teinte: 'noir', gras: true }]
-  const ligneBoite = (texte: string) => boite.push({ texte: raccourcir(texte), teinte: 'noir' })
+  const ligneCase = (texte: string, gras?: boolean): Ligne => {
+    const court = raccourcir(texte), entier = texte.replace(/\s+/g, ' ').trim()
+    return { texte: court, teinte: 'noir', ...(gras ? { gras } : {}), ...(court !== entier ? { complet: entier } : {}) }
+  }
+  const boite: Ligne[] = [ligneCase(nom, true)]
+  const ligneBoite = (texte: string) => boite.push(ligneCase(texte))
   if (p.naissance) ligneBoite(evenement('N', p.naissance.date, p.naissance.lieu))
   if (p.deces) ligneBoite(evenement('✝', p.deces.date, p.deces.lieu))
   if (role === 'conjoint' && unionEntree?.divorce) ligneBoite(evenement('Divorce', unionEntree.divorce.date, unionEntree.divorce.lieu))
