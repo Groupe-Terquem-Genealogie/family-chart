@@ -10,6 +10,9 @@ export type Operation =
   | { type: 'ajouterUnion'; union: Union }
   | { type: 'modifierUnion'; unionId: string; valeurs: Partial<Omit<Union, 'id'>> }
   | { type: 'supprimerUnion'; unionId: string }
+  /** Delta : rattache ou détache une seule personne, sans réécrire la liste (rejouable sur un GEDCOM ré-exporté). */
+  | { type: 'lierPersonne'; unionId: string; personneId: string; role: 'conjoint' | 'enfant' }
+  | { type: 'delierPersonne'; unionId: string; personneId: string; role: 'conjoint' | 'enfant' }
 
 export interface EntreeJournal { id: string; horodatage: string; operation: Operation }
 export interface Journal { version: 1; gedcom: string; entrees: EntreeJournal[] }
@@ -80,6 +83,16 @@ export function appliquerJournal(base: Arbre, journal: Journal): Arbre {
       case 'supprimerUnion':
         if (!a.unions.delete(op.unionId)) ignorer('union', op.unionId)
         break
+      case 'lierPersonne':
+      case 'delierPersonne': {
+        const u = a.unions.get(op.unionId)
+        if (!u) { ignorer('union', op.unionId); break }
+        if (!a.personnes.has(op.personneId)) { ignorer('personne', op.personneId); break }
+        const cle = op.role === 'conjoint' ? 'conjoints' : 'enfants'
+        if (op.type === 'delierPersonne') u[cle] = u[cle].filter(id => id !== op.personneId)
+        else if (!u[cle].includes(op.personneId)) u[cle].push(op.personneId)
+        break
+      }
     }
   }
   recalculerLiens(a)

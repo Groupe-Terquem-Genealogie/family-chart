@@ -55,10 +55,22 @@ describe('panneau de fiche', () => {
     const { cont, p, journaliser, arbre } = monter()
     arbre.personnes.get(H)!.deces = {}
     p.ouvrir(H)
+    saisir(champ(cont, 'profession'), 'Plaquiste')
     bouton(cont, 'Enregistrer').click()
     const op = journaliser.mock.calls[0][0][0] as Extract<Operation, { type: 'modifierPersonne' }>
     expect('deces' in op.valeurs).toBe(false)
     expect('naissance' in op.valeurs).toBe(false)
+  })
+
+  it('situation inconnue de la liste (« Auteur ») : conservée à l’enregistrement', () => {
+    const { cont, p, journaliser, arbre } = monter()
+    arbre.personnes.get(H)!.champs.situation = 'Auteur'
+    p.ouvrir(H)
+    expect(champ(cont, 'situation').value).toBe('Auteur')
+    saisir(champ(cont, 'profession'), 'X')
+    bouton(cont, 'Enregistrer').click()
+    const op = journaliser.mock.calls[0][0][0] as Extract<Operation, { type: 'modifierPersonne' }>
+    expect('situation' in op.valeurs.champs!).toBe(false)
   })
 
   it('ajouter un enfant puis valider', () => {
@@ -68,7 +80,7 @@ describe('panneau de fiche', () => {
     saisir(champ(cont, 'nouveau.nom'), 'PETIT')
     bouton(cont, 'Valider').click()
     const ops = journaliser.mock.calls[0][0]
-    expect(ops.map(o => o.type)).toEqual(['ajouterPersonne', 'modifierUnion'])
+    expect(ops.map(o => o.type)).toEqual(['ajouterPersonne', 'lierPersonne'])
   })
 
   it('supprimer : confirmation avec le nombre de personnes détachées', () => {

@@ -88,6 +88,31 @@ describe('journal', () => {
     expect(r.personnes.get('@GV-I-2@')!.fams).toEqual(['@GV-F-1@'])
   })
 
+  it('lier / délier une personne à une union (opérations delta)', () => {
+    const r = appliquerJournal(base(), avec(
+      { type: 'ajouterPersonne', personne: personne('@GV-I-1@') },
+      { type: 'lierPersonne', unionId: '@F1@', personneId: '@GV-I-1@', role: 'enfant' },
+      { type: 'lierPersonne', unionId: '@F1@', personneId: '@GV-I-1@', role: 'enfant' },
+      { type: 'delierPersonne', unionId: '@F2@', personneId: '@I4@', role: 'conjoint' }))
+    expect(r.unions.get('@F1@')!.enfants).toEqual(['@I3@', '@GV-I-1@'])
+    expect(r.unions.get('@F2@')!.conjoints).toEqual(['@I3@'])
+    expect(r.personnes.get('@I4@')!.fams).toEqual([])
+  })
+
+  it('rejeu sur un GEDCOM ré-exporté : un enfant ajouté dans Généatique n’est pas écrasé', () => {
+    const journal = avec({ type: 'ajouterPersonne', personne: personne('@GV-I-1@') },
+      { type: 'lierPersonne', unionId: '@F1@', personneId: '@GV-I-1@', role: 'enfant' })
+    const reexport = base()
+    reexport.personnes.set('@I8@', { ...personne('@I8@'), famc: ['@F1@'], fams: [], defunt: false })
+    reexport.unions.get('@F1@')!.enfants.push('@I8@')
+    expect(appliquerJournal(reexport, journal).unions.get('@F1@')!.enfants).toEqual(['@I3@', '@I8@', '@GV-I-1@'])
+  })
+
+  it('lier à une union ou une personne absente : ignoré avec avertissement', () => {
+    const r = appliquerJournal(base(), avec({ type: 'lierPersonne', unionId: '@F9@', personneId: '@I3@', role: 'enfant' }))
+    expect(r.avertissements).toContain('Opération ignorée : union @F9@ introuvable')
+  })
+
   it('supprimer une personne la retire des unions', () => {
     const r = appliquerJournal(base(), avec({ type: 'supprimerPersonne', personneId: '@I3@' }))
     expect(r.personnes.has('@I3@')).toBe(false)

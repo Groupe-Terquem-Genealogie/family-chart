@@ -131,7 +131,13 @@ export function creerPanneau(conteneur: HTMLElement,
     }
     for (const gr of GROUPES) {
       const g = groupe(gr.titre)
-      if (gr.titre === 'Dossier') liste(g, 'situation', 'Situation', [['', ''], ['Héritier', 'Héritier']], p.champs.situation ?? '')
+      if (gr.titre === 'Dossier') {
+        // Une valeur hors liste (« Auteur », variante de casse…) est proposée telle quelle pour ne pas être perdue.
+        const situation = p.champs.situation ?? ''
+        const options: [string, string][] = [['', ''], ['Héritier', 'Héritier']]
+        if (!options.some(([v]) => v === situation)) options.push([situation, situation])
+        liste(g, 'situation', 'Situation', options, situation)
+      }
       gr.champs.forEach(([k, lib]) => saisie(g, k, lib, p.champs[k]))
     }
 

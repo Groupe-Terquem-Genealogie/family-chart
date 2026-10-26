@@ -6,7 +6,7 @@ import { ajouterEntree, appliquerJournal, journalVide, Operation } from '../src/
 import { disposer } from '../src/disposition'
 import { rechercher } from '../src/recherche'
 import { opsAjouterConjoint, opsAjouterEnfant, opsAjouterParent, opsModifierFiche, opsSupprimerPersonne,
-  opsSupprimerUnion, SaisieFiche } from '../src/edition'
+  opsSupprimerUnion, opsDelier, SaisieFiche } from '../src/edition'
 import { Arbre } from '../src/modele'
 
 const remariage = () => lireGedcom(readFileSync(resolve(__dirname, 'fixtures/remariage.ged'), 'utf-8'))
@@ -43,10 +43,26 @@ describe('édition', () => {
     expect(jouer(a, ops).personnes.get(H)!.champs.profession).toBeUndefined()
   })
 
+  it('modifier une fiche : seuls les champs changés sont envoyés, rien si rien ne change', () => {
+    const a = remariage()
+    expect(opsModifierFiche(a, H, { nom: 'EPOUX', prenoms: 'Hélène', sexe: 'F', champs: {} })).toEqual([])
+    const ops = opsModifierFiche(a, H, { nom: 'EPOUSE', prenoms: 'Hélène', sexe: 'F', champs: {} })
+    expect(ops).toEqual([{ type: 'modifierPersonne', personneId: H, valeurs: { nom: 'EPOUSE' } }])
+  })
+
+  it('supprimer le lien de mariage : le conjoint est détaché, les enfants restent', () => {
+    const a = remariage()
+    const ops = opsDelier(a, '@F3@', S, 'conjoint')
+    expect(ops).toEqual([{ type: 'delierPersonne', unionId: '@F3@', personneId: S, role: 'conjoint' }])
+    const b = jouer(a, ops)
+    expect(b.unions.get('@F3@')!.conjoints).toEqual([E2])
+    expect(b.unions.get('@F3@')!.enfants).toEqual([H])
+  })
+
   it('ajouter un enfant à une union : il apparaît sous le bon conjoint', () => {
     const a = remariage()
     const ops = opsAjouterEnfant(a, C, '@F2@', saisie('BEBE'))
-    expect(ops.map(o => o.type)).toEqual(['ajouterPersonne', 'modifierUnion'])
+    expect(ops.map(o => o.type)).toEqual(['ajouterPersonne', 'lierPersonne'])
     const b = jouer(a, ops)
     const id = (ops[0] as Extract<Operation, { type: 'ajouterPersonne' }>).personne.id
     expect(b.personnes.get(id)!.famc).toEqual(['@F2@'])
@@ -85,7 +101,7 @@ describe('édition', () => {
     const a = remariage()
     a.unions.get('@F3@')!.conjoints = [E2]
     const ops = opsAjouterParent(a, H, saisie())
-    expect(ops.map(o => o.type)).toEqual(['ajouterPersonne', 'modifierUnion'])
+    expect(ops.map(o => o.type)).toEqual(['ajouterPersonne', 'lierPersonne'])
     const nouveau = (ops[0] as Extract<Operation, { type: 'ajouterPersonne' }>).personne.id
     expect(jouer(a, ops).unions.get('@F3@')!.conjoints).toEqual([E2, nouveau])
   })
