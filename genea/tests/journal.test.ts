@@ -38,6 +38,16 @@ describe('journal', () => {
     expect(JSON.stringify([...a.personnes.values(), ...a.unions.values()])).toBe(avant)
   })
 
+  it("un journal vide redonne exactement l'arbre lu (liens et ordre)", () => {
+    const a = base()
+    a.personnes.get('@I3@')!.fams = ['@F2@']
+    a.unions.set('@F0@', { id: '@F0@', conjoints: ['@I3@'], enfants: [] })
+    a.personnes.get('@I3@')!.fams = ['@F0@', '@F2@']          // ordre différent de celui des unions
+    const r = appliquerJournal(a, journalVide('x'))
+    for (const [id, p] of a.personnes) expect(r.personnes.get(id)).toEqual(p)
+    for (const [id, u] of a.unions) expect(r.unions.get(id)).toEqual(u)
+  })
+
   it('modifier une fiche ; une valeur vide supprime le champ', () => {
     const r = appliquerJournal(base(), avec({ type: 'modifierPersonne', personneId: '@I3@',
       valeurs: { prenoms: 'Jean', champs: { profession: '', celibataire: 'Non' } } }))

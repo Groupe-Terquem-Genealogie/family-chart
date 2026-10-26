@@ -30,7 +30,7 @@ export function creerPanneau(conteneur: HTMLElement,
   racine.hidden = true
   let courant: string | null = null
 
-  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, parent: HTMLElement, props: Partial<HTMLElementTagNameMap[K]> = {}) =>
+  const el = <K extends keyof HTMLElementTagNameMap>(tag: K, parent: HTMLElement, props: Record<string, unknown> = {}): HTMLElementTagNameMap[K] =>
     Object.assign(parent.appendChild(document.createElement(tag)), props)
   const groupe = (titre: string) => { const f = el('fieldset', racine); el('legend', f, { textContent: titre }); return f }
   const saisie = (parent: HTMLElement, name: string, libelle: string, valeur = '') => {

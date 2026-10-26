@@ -4,4 +4,5 @@
 /.vscode/
 /tests/debugging/
 cypress/screenshots
-docs/apigenea/dist/
+docs/api
+genea/dist/

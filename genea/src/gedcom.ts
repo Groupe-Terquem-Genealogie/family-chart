@@ -59,6 +59,7 @@ export function lireGedcom(texte: string): Arbre {
     else if (tete.niveau === 0 && tete.xref && tete.balise === 'FAM') lireUnion(arbre, tete.xref, corps)
     i = fin
   }
+  reconcilier(arbre)
   const defunts = [...arbre.personnes.values()].filter(p => p.defunt)
   if (defunts.length === 0) arbre.avertissements.push('Défunt non identifié')
   else {
@@ -143,4 +144,31 @@ function lireUnion(arbre: Arbre, id: string, corps: Ligne[]) {
     else if (ligne.balise === 'DIV') u.divorce = evenement(sous)
   }
   arbre.unions.set(id, u)
+}
+
+/**
+ * Les exports Généatique ne sont pas toujours symétriques (FAM qui cite un conjoint ou un enfant
+ * sans FAMS/FAMC en retour, et l'inverse) : on prend l'union des deux sens, ordre des INDI d'abord.
+ */
+function reconcilier(arbre: Arbre) {
+  for (const p of arbre.personnes.values()) {
+    for (const [refs, cle] of [[p.fams, 'conjoints'], [p.famc, 'enfants']] as const) {
+      for (const f of [...refs]) {
+        const u = arbre.unions.get(f)
+        if (!u) {
+          refs.splice(refs.indexOf(f), 1)
+          arbre.avertissements.push(`${p.id} : union ${f} introuvable, lien ignoré`)
+        } else if (!u[cle].includes(p.id)) u[cle].push(p.id)
+      }
+    }
+  }
+  for (const u of arbre.unions.values()) {
+    for (const [ids, cle] of [[u.conjoints, 'fams'], [u.enfants, 'famc']] as const) {
+      for (const id of [...ids]) {
+        const p = arbre.personnes.get(id)
+        if (!p) ids.splice(ids.indexOf(id), 1)
+        else if (!p[cle].includes(u.id)) p[cle].push(u.id)
+      }
+    }
+  }
 }

@@ -85,6 +85,24 @@ describe('lireGedcom', () => {
   })
 })
 
+describe('liens incohérents entre INDI et FAM', () => {
+  it('réconciliés dans les deux sens, ordre des INDI conservé', () => {
+    const a = lireGedcom(tete + [
+      '0 @I1@ INDI', '1 FAMS @F2@',                       // F1 le cite comme mari sans FAMS @F1@
+      '0 @I2@ INDI', '1 FAMC @F1@',                       // F1 ne le liste pas comme enfant
+      '0 @I3@ INDI',                                      // F1 le liste comme enfant sans FAMC
+      '0 @I4@ INDI', '1 FAMS @F9@',                       // union inexistante
+      '0 @F1@ FAM', '1 HUSB @I1@', '1 CHIL @I3@',
+      '0 @F2@ FAM', '1 HUSB @I1@',
+    ].join('\n') + '\n')
+    expect(a.personnes.get('@I1@')!.fams).toEqual(['@F2@', '@F1@'])
+    expect(a.unions.get('@F1@')!.enfants).toEqual(['@I3@', '@I2@'])
+    expect(a.personnes.get('@I3@')!.famc).toEqual(['@F1@'])
+    expect(a.personnes.get('@I4@')!.fams).toEqual([])
+    expect(a.avertissements.some(m => m.includes('@F9@'))).toBe(true)
+  })
+})
+
 describe('normaliserBalise', () => {
   it('majuscules, sans accents, caractère de remplacement lu comme E', () => {
     expect(normaliserBalise('_Célibataire')).toBe('_CELIBATAIRE')

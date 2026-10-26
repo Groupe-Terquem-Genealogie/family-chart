@@ -94,6 +94,7 @@ function viderEvenements(o: object, cles: string[]) {
 
 /** famc/fams déduits des unions (seule source de vérité) ; références absentes retirées. */
 function recalculerLiens(a: Arbre) {
+  const avant = new Map([...a.personnes].map(([id, p]) => [id, { famc: p.famc, fams: p.fams }]))
   for (const p of a.personnes.values()) { p.famc = []; p.fams = [] }
   for (const [id, u] of [...a.unions]) {
     const garder = (pid: string) => {
@@ -106,5 +107,12 @@ function recalculerLiens(a: Arbre) {
     if (!u.conjoints.length && !u.enfants.length) { a.unions.delete(id); continue }
     u.conjoints.forEach(pid => a.personnes.get(pid)!.fams.push(id))
     u.enfants.forEach(pid => a.personnes.get(pid)!.famc.push(id))
+  }
+  // Ordre d'origine conservé (il fixe l'ordre des branches), nouvelles unions à la fin.
+  const ordonner = (refs: string[], ancien: string[] = []) =>
+    [...ancien.filter(f => refs.includes(f)), ...refs.filter(f => !ancien.includes(f))]
+  for (const [id, p] of a.personnes) {
+    p.famc = ordonner(p.famc, avant.get(id)?.famc)
+    p.fams = ordonner(p.fams, avant.get(id)?.fams)
   }
 }
