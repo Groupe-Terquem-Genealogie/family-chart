@@ -30,6 +30,17 @@ export function creerPanneau(conteneur: HTMLElement,
   racine.className = 'gv-panneau'
   racine.hidden = true
   let courant: string | null = null
+  /** Fiche modifiée depuis son ouverture (hors formulaire d'ajout) et sa sauvegarde. */
+  let modifiee = false
+  let enregistrerCourante: () => void = () => {}
+  racine.addEventListener('input', e => {
+    if (!(e.target as HTMLInputElement).name?.startsWith('nouveau.')) modifiee = true
+  })
+  /** Avant de quitter une fiche modifiée : on propose de conserver les modifications. */
+  const quitter = () => {
+    if (modifiee && courant && window.confirm(`Conserver les modifications de ${nomDe(courant)} ?`)) enregistrerCourante()
+    modifiee = false
+  }
 
   const el = <K extends keyof HTMLElementTagNameMap>(tag: K, parent: HTMLElement, props: Record<string, unknown> = {}): HTMLElementTagNameMap[K] =>
     Object.assign(parent.appendChild(document.createElement(tag)), props)
@@ -104,6 +115,8 @@ export function creerPanneau(conteneur: HTMLElement,
   }
 
   function ouvrir(personneId: string) {
+    if (personneId !== courant) quitter()
+    modifiee = false
     const arbre = deps.arbre()
     const p = arbre.personnes.get(personneId)
     if (!p) return fermer()
@@ -163,9 +176,12 @@ export function creerPanneau(conteneur: HTMLElement,
     }
 
     const actions = el('div', racine, { className: 'gv-actions' })
+    enregistrerCourante = () => {
+      modifiee = false
+      deps.journaliser([...opsModifierFiche(arbre, personneId, lireFiche(p)), ...opsUnions(p)])
+    }
     el('button', actions, { type: 'button', textContent: 'Enregistrer' }).onclick = () => {
-      const ops = [...opsModifierFiche(arbre, personneId, lireFiche(p)), ...opsUnions(p)]
-      deps.journaliser(ops)
+      enregistrerCourante()
       ouvrir(personneId)
     }
     el('button', actions, { type: 'button', textContent: 'Ajouter un enfant' }).onclick = () => {
@@ -182,15 +198,19 @@ export function creerPanneau(conteneur: HTMLElement,
       formulaireAjout('Nouveau parent', false, null, s => opsAjouterParent(deps.arbre(), personneId, s))
     el('button', actions, { type: 'button', textContent: 'Supprimer' }).onclick = () => {
       const { operations, descendantsDetaches } = opsSupprimerPersonne(deps.arbre(), personneId)
-      const message = `Supprimer ${nomDe(personneId)} ?` + (descendantsDetaches
+      const message = `Supprimer ${nomDe(personneId)} ?`
+        + (personneId === deps.arbre().defuntId
+          ? "\nAttention : c'est le défunt de la succession, l'arbre n'aura plus de racine." : '')
+        + (descendantsDetaches
         ? `\n${descendantsDetaches} personne(s) ne seront plus rattachées à l'arbre du défunt.` : '')
       if (!window.confirm(message)) return
       deps.journaliser(operations)
+      modifiee = false
       fermer()
     }
   }
 
-  function fermer() { courant = null; racine.hidden = true; racine.replaceChildren() }
+  function fermer() { quitter(); courant = null; racine.hidden = true; racine.replaceChildren() }
 
   return { ouvrir, fermer }
 }

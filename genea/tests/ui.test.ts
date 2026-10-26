@@ -13,9 +13,9 @@ const vueFactice = (): Vue => ({ afficher: vi.fn(), ajuster: vi.fn(), surSelecti
 const champ = (racine: HTMLElement, nom: string) => racine.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${nom}"]`)!
 const bouton = (racine: HTMLElement, texte: string) =>
   [...racine.querySelectorAll('button')].find(b => b.textContent === texte)!
-const saisir = (el: HTMLInputElement | HTMLSelectElement, v: string) => { el.value = v; el.dispatchEvent(new Event('input')) }
+const saisir = (el: HTMLInputElement | HTMLSelectElement, v: string) => { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })) }
 
-beforeEach(() => { document.body.innerHTML = '' })
+beforeEach(() => { document.body.innerHTML = ''; vi.restoreAllMocks() })
 
 describe('versDateGedcom', () => {
   it('dates complètes et incomplètes', () => {
@@ -111,6 +111,45 @@ describe('panneau de fiche', () => {
     for (const nom of ['saisie', 'representationConj', 'adresseConjoint', 'adresse1Conjoint', 'cpConjoint', 'telephoneConjoint',
       'enfantLegitime', 'enfantReconnuPere', 'enfantReconnuMere', 'rc'])
       expect(champ(cont, nom), nom).toBeTruthy()
+  })
+
+  it('changer de carte avec des modifications en cours : on propose de les conserver', () => {
+    const { cont, p, journaliser } = monter()
+    const confirmer = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    p.ouvrir(H)
+    saisir(champ(cont, 'profession'), 'Plaquiste')
+    p.ouvrir(E2)
+    expect(confirmer.mock.calls[0][0]).toContain('EPOUX Hélène')
+    const op = journaliser.mock.calls[0][0][0] as Extract<Operation, { type: 'modifierPersonne' }>
+    expect(op.personneId).toBe(H)
+    expect(op.valeurs.champs!.profession).toBe('Plaquiste')
+    expect(champ(cont, 'nom').value).toBe('REMARI')
+  })
+
+  it('changer de carte en refusant de conserver : modifications abandonnées', () => {
+    const { cont, p, journaliser } = monter()
+    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    p.ouvrir(H)
+    saisir(champ(cont, 'profession'), 'Plaquiste')
+    p.ouvrir(E2)
+    expect(journaliser).not.toHaveBeenCalled()
+    expect(champ(cont, 'nom').value).toBe('REMARI')
+  })
+
+  it('changer de carte sans modification : aucune question', () => {
+    const { p } = monter()
+    const confirmer = vi.spyOn(window, 'confirm')
+    p.ouvrir(H)
+    p.ouvrir(E2)
+    expect(confirmer).not.toHaveBeenCalled()
+  })
+
+  it('supprimer le défunt : avertissement explicite', () => {
+    const { cont, p } = monter()
+    const confirmer = vi.spyOn(window, 'confirm').mockReturnValue(false)
+    p.ouvrir(D)
+    bouton(cont, 'Supprimer').click()
+    expect(confirmer.mock.calls[0][0]).toContain('défunt de la succession')
   })
 
   it('ajouter un enfant puis valider', () => {
