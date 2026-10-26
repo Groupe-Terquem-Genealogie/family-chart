@@ -73,6 +73,32 @@ describe('panneau de fiche', () => {
     expect('situation' in op.valeurs.champs!).toBe(false)
   })
 
+  it('rubrique Parents : noms des parents, ouverture de leur fiche, détachement', () => {
+    const { cont, p, journaliser } = monter()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    p.ouvrir(H)
+    const parents = [...cont.querySelectorAll('.gv-parents li')].map(li => li.querySelector('a')!.textContent)
+    expect(parents).toEqual(['EPOUX Simon', 'REMARI Adèle'])
+    bouton(cont, 'Détacher de ses parents').click()
+    expect(journaliser.mock.calls[0][0]).toEqual([{ type: 'delierPersonne', unionId: '@F3@', personneId: H, role: 'enfant' }])
+  })
+
+  it('supprimer le lien de mariage depuis la fiche', () => {
+    const { cont, p, journaliser } = monter()
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    p.ouvrir(E2)
+    bouton(cont, 'Supprimer le lien de mariage').click()
+    expect(journaliser.mock.calls[0][0]).toEqual([{ type: 'delierPersonne', unionId: '@F3@', personneId: '@I6@', role: 'conjoint' }])
+  })
+
+  it('tous les champs de l’export sont modifiables', () => {
+    const { cont, p } = monter()
+    p.ouvrir(H)
+    for (const nom of ['saisie', 'representationConj', 'adresseConjoint', 'adresse1Conjoint', 'cpConjoint', 'telephoneConjoint',
+      'enfantLegitime', 'enfantReconnuPere', 'enfantReconnuMere', 'rc'])
+      expect(champ(cont, nom), nom).toBeTruthy()
+  })
+
   it('ajouter un enfant puis valider', () => {
     const { cont, p, journaliser } = monter()
     p.ouvrir(E2)

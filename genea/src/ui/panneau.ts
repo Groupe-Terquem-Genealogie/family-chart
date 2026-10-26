@@ -2,7 +2,7 @@
 import { Arbre, CleChamp, Evenement, Personne } from '../modele'
 import { Operation } from '../journal'
 import { formaterDate, formaterLieu } from '../carte'
-import { opsAjouterConjoint, opsAjouterEnfant, opsAjouterParent, opsModifierFiche, opsSupprimerPersonne, SaisieFiche } from '../edition'
+import { opsAjouterConjoint, opsAjouterEnfant, opsAjouterParent, opsDelier, opsModifierFiche, opsSupprimerPersonne, SaisieFiche } from '../edition'
 import { Vue } from '../rendu'
 
 const MOIS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
@@ -15,10 +15,15 @@ export function versDateGedcom(s: string): string {
 
 const GROUPES: { titre: string; champs: [CleChamp, string][] }[] = [
   { titre: 'Coordonnées', champs: [['adresse', 'Adresse'], ['adresseComplement', 'Adresse complément'],
-    ['codePostal', 'Code postal'], ['telephoneHeritier', 'Téléphone héritier'], ['email', 'E-mail']] },
+    ['codePostal', 'Code postal'], ['telephoneHeritier', 'Téléphone héritier'], ['email', 'E-mail'],
+    ['adresseConjoint', 'Adresse conjoint'], ['adresse1Conjoint', 'Adresse complément conjoint'],
+    ['cpConjoint', 'Code postal conjoint'], ['telephoneConjoint', 'Téléphone conjoint']] },
   { titre: 'Mentions', champs: [['celibataire', 'Célibataire'], ['sansPosterite', 'Sans postérité'],
-    ['mortEnBasAge', 'Mort en bas âge'], ['regimeMatrimonial', 'Régime matrimonial']] },
-  { titre: 'Dossier', champs: [['representation', 'Représentation'], ['saisi', 'SAISI(E)']] },
+    ['mortEnBasAge', 'Mort en bas âge'], ['regimeMatrimonial', 'Régime matrimonial'],
+    ['enfantLegitime', 'Enfant légitimé'], ['enfantReconnuPere', 'Enfant reconnu par le père'],
+    ['enfantReconnuMere', 'Enfant reconnu par la mère'], ['rc', 'Répertoire civil']] },
+  { titre: 'Dossier', champs: [['representation', 'Représentation'], ['representationConj', 'Représentation conjoint'],
+    ['saisi', 'SAISI(E)'], ['saisie', 'SAISIE (événement)']] },
 ]
 
 export interface Panneau { ouvrir(personneId: string): void; fermer(): void }
@@ -118,6 +123,22 @@ export function creerPanneau(conteneur: HTMLElement,
     liste(id, 'sexe', 'Sexe', [['U', '?'], ['M', 'Masculin'], ['F', 'Féminin']], p.sexe)
     saisie(id, 'profession', 'Professions', p.champs.profession)
 
+    if (p.famc.length) {
+      const par = groupe('Parents')
+      for (const f of p.famc) {
+        const u = arbre.unions.get(f)
+        if (!u) continue
+        const ul = el('ul', par, { className: 'gv-parents' })
+        for (const id of u.conjoints) {
+          const lien = el('a', el('li', ul), { href: '#', textContent: nomDe(id) })
+          lien.onclick = (e: Event) => { e.preventDefault(); deps.vue.afficher(id); ouvrir(id) }
+        }
+        el('button', par, { type: 'button', textContent: 'Détacher de ses parents' }).onclick = () => {
+          if (window.confirm(`Détacher ${nomDe(personneId)} de ses parents ?`)) { deps.journaliser(opsDelier(deps.arbre(), f, personneId, 'enfant')); ouvrir(personneId) }
+        }
+      }
+    }
+
     const ev = groupe('Événements')
     champsEvenement(ev, 'naissance', 'Naissance', p.naissance)
     champsEvenement(ev, 'deces', 'Décès', p.deces)
@@ -128,6 +149,10 @@ export function creerPanneau(conteneur: HTMLElement,
       const g = groupe(`Union${autre ? ' avec ' + nomDe(autre) : ''}`)
       champsEvenement(g, `union.${f}.mariage`, 'Mariage', u.mariage)
       champsEvenement(g, `union.${f}.divorce`, 'Divorce', u.divorce)
+      if (autre) el('button', g, { type: 'button', textContent: 'Supprimer le lien de mariage' }).onclick = () => {
+        if (window.confirm(`Supprimer le lien de mariage avec ${nomDe(autre)} ? Les enfants restent rattachés à ${nomDe(personneId)}.`))
+          { deps.journaliser(opsDelier(deps.arbre(), f, autre, 'conjoint')); ouvrir(personneId) }
+      }
     }
     for (const gr of GROUPES) {
       const g = groupe(gr.titre)
