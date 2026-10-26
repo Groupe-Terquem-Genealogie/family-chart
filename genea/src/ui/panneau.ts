@@ -2,16 +2,12 @@
 import { Arbre, CleChamp, Evenement, Personne } from '../modele'
 import { Operation } from '../journal'
 import { formaterDate, formaterLieu } from '../carte'
+import { dateVersGedcom } from '../dates'
 import { opsAjouterConjoint, opsAjouterEnfant, opsAjouterParent, opsDelier, opsModifierFiche, opsSupprimerPersonne, SaisieFiche } from '../edition'
 import { Vue } from '../rendu'
 
-const MOIS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-
-/** « 02/03/2020 » → « 02 MAR 2020 » ; toute autre saisie est conservée telle quelle. */
-export function versDateGedcom(s: string): string {
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{3,4})$/.exec(s.trim())
-  return m && +m[2] >= 1 && +m[2] <= 12 ? `${m[1].padStart(2, '0')} ${MOIS[+m[2] - 1]} ${m[3]}` : s.trim()
-}
+/** Saisie française (complète ou incomplète) → date GEDCOM ; voir dates.ts. */
+export const versDateGedcom = dateVersGedcom
 
 const GROUPES: { titre: string; champs: [CleChamp, string][] }[] = [
   { titre: 'Coordonnées', champs: [['adresse', 'Adresse'], ['adresseComplement', 'Adresse complément'],

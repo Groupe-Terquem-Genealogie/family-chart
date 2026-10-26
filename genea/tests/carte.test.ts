@@ -10,8 +10,15 @@ describe('formatage', () => {
     expect(formaterDate('13 JAN 1866')).toBe('13/01/1866')
     expect(formaterDate('7 AUG 1924')).toBe('07/08/1924')
     expect(formaterDate('1863')).toBe('1863')
-    expect(formaterDate('ABT 1900')).toBe('ABT 1900')
     expect(formaterDate(undefined)).toBe('')
+  })
+  it('dates incomplètes', () => {
+    expect(formaterDate('MAR 1863')).toBe('03/1863')
+    expect(formaterDate('ABT 1900')).toBe('vers 1900')
+    expect(formaterDate('BEF 12 MAR 1900')).toBe('avant 12/03/1900')
+    expect(formaterDate('AFT 1900')).toBe('après 1900')
+    expect(formaterDate('EST 1900')).toBe('vers 1900')
+    expect(formaterDate('BET 1900 AND 1905')).toBe('entre 1900 et 1905')
   })
   it('lieux', () => {
     expect(formaterLieu(', Saint Leu, 974, Réunion, , ')).toBe('Saint Leu, 974')

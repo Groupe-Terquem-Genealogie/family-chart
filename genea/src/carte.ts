@@ -2,6 +2,7 @@
 // mentions de l'étude en rouge au-dessus, identité et événements dans la boîte,
 // mentions en noir et coordonnées en vert en dessous.
 import { CleChamp, estHeritier, Personne, Union } from './modele'
+import { dateVersAffichage } from './dates'
 
 export type Teinte = 'noir' | 'vert' | 'rouge'
 export interface Ligne { texte: string; teinte: Teinte; gras?: boolean }
@@ -21,13 +22,8 @@ export interface Mesure { largeur: number; hauteurDessus: number; hauteurBoite: 
 /** lignesBoite : hauteur fixe des cases (nom, naissance, décès, divorce ou « voir aussi »), comme Généatique. */
 export const CARTE = { largeur: 200, interligne: 14, marge: 4, croix: 28, carMaxParLigne: 34, lignesBoite: 4 }
 
-const MOIS: Record<string, string> = { JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
-  JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12' }
-
 export function formaterDate(d?: string): string {
-  if (!d) return ''
-  const m = /^(\d{1,2}) ([A-Z]{3}) (\d{3,4})$/.exec(d.trim())
-  return m && MOIS[m[2]] ? `${m[1].padStart(2, '0')}/${MOIS[m[2]]}/${m[3]}` : d.trim()
+  return dateVersAffichage(d)
 }
 
 /** « , Ville, Dépt, Région, , » → « Ville, Dépt ». */

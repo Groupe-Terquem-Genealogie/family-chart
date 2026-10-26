@@ -3,7 +3,7 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { lireGedcom } from '../src/gedcom'
 import { Operation } from '../src/journal'
-import { creerPanneau } from '../src/ui/panneau'
+import { creerPanneau, versDateGedcom } from '../src/ui/panneau'
 import { creerBarre } from '../src/ui/barre'
 import { Vue } from '../src/rendu'
 
@@ -16,6 +16,20 @@ const bouton = (racine: HTMLElement, texte: string) =>
 const saisir = (el: HTMLInputElement | HTMLSelectElement, v: string) => { el.value = v; el.dispatchEvent(new Event('input')) }
 
 beforeEach(() => { document.body.innerHTML = '' })
+
+describe('versDateGedcom', () => {
+  it('dates complètes et incomplètes', () => {
+    expect(versDateGedcom('02/03/2020')).toBe('02 MAR 2020')
+    expect(versDateGedcom('03/1863')).toBe('MAR 1863')
+    expect(versDateGedcom('1863')).toBe('1863')
+    expect(versDateGedcom('vers 1900')).toBe('ABT 1900')
+    expect(versDateGedcom('env. 1900')).toBe('ABT 1900')
+    expect(versDateGedcom('avant 12/03/1900')).toBe('BEF 12 MAR 1900')
+    expect(versDateGedcom('après 1900')).toBe('AFT 1900')
+    expect(versDateGedcom('entre 1900 et 1905')).toBe('BET 1900 AND 1905')
+    expect(versDateGedcom('n’importe quoi')).toBe('n’importe quoi')
+  })
+})
 
 describe('panneau de fiche', () => {
   const monter = () => {

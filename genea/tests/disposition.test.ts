@@ -129,6 +129,19 @@ describe('disposer', () => {
     expect(centre('R')).toBeCloseTo((centre('A') + centre('B')) / 2)   // parent centré sur ses enfants
   })
 
+  it('enfants triés par date, dates incomplètes comprises', () => {
+    const a = lireGedcom('0 HEAD\n')
+    const pers = (id: string, date?: string) => a.personnes.set(id, { id, nom: id, prenoms: '', sexe: 'M', champs: {}, famc: [], fams: [], defunt: false,
+      ...(date ? { naissance: { date } } : {}) })
+    pers('R'); pers('X', '1870'); pers('Y', 'ABT 1860'); pers('Z', '05 JAN 1865'); pers('W')
+    a.unions.set('F', { id: 'F', conjoints: ['R'], enfants: ['X', 'Y', 'Z', 'W'] })
+    a.personnes.get('R')!.fams.push('F'); ['X', 'Y', 'Z', 'W'].forEach(e => a.personnes.get(e)!.famc.push('F'))
+    a.defuntId = 'R'
+    const d = disposer(a, 'R')
+    const ordre = d.boites.filter(b => b.personneId !== 'R').sort((p, q) => p.x - q.x).map(b => b.personneId)
+    expect(ordre).toEqual(['Y', 'Z', 'X', 'W'])
+  })
+
   it('clés uniques', () => {
     const d = disposer(remariage(), D)
     expect(new Set(d.boites.map(b => b.cle)).size).toBe(d.boites.length)

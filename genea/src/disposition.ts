@@ -4,6 +4,7 @@
 // au-dessus, le chemin qui la relie à la racine (le défunt) ; en dessous, toute sa descendance.
 import { Arbre, Union } from './modele'
 import { ContenuCarte, contenuCarte, Mesure, mesurer, Role } from './carte'
+import { cleTriDate } from './dates'
 
 export interface Boite {
   cle: string
@@ -32,17 +33,9 @@ interface Noeud {
   parent?: Noeud
 }
 
-/** Date GEDCOM complète → aaaammjj ; sinon null. */
-function cleDate(d?: string): number | null {
-  const MOIS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
-  const m = d ? /^(\d{1,2}) ([A-Z]{3}) (\d{3,4})$/.exec(d.trim()) : null
-  if (!m || !MOIS.includes(m[2])) return null
-  return +m[3] * 10000 + (MOIS.indexOf(m[2]) + 1) * 100 + +m[1]
-}
-
-/** Tri stable : dates complètes d'abord (croissantes), puis l'ordre d'origine. */
+/** Tri stable : dates (même incomplètes) croissantes, sans date à la fin, puis l'ordre d'origine. */
 function trierParDate<T>(elts: T[], date: (e: T) => string | undefined): T[] {
-  return elts.map((e, i) => ({ e, i, k: cleDate(date(e)) }))
+  return elts.map((e, i) => ({ e, i, k: cleTriDate(date(e)) }))
     .sort((a, b) => (a.k === null ? 1 : 0) - (b.k === null ? 1 : 0) || (a.k ?? 0) - (b.k ?? 0) || a.i - b.i)
     .map(x => x.e)
 }
