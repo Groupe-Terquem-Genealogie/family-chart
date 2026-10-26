@@ -102,6 +102,33 @@ describe('disposer', () => {
     expect(par(d.boites, C).contenu.replie).toBe(true)
   })
 
+  it('compacte les sous-arbres : une descendance large se glisse sous un voisin étroit', () => {
+    // R a deux enfants : A (large seulement à la 3e génération) et B (large dès la 2e).
+    const a = lireGedcom('0 HEAD\n')
+    const pers = (id: string) => a.personnes.set(id, { id, nom: id, prenoms: '', sexe: 'M', champs: {}, famc: [], fams: [], defunt: false })
+    const union = (id: string, parent: string, enfants: string[]) => {
+      a.unions.set(id, { id, conjoints: [parent], enfants })
+      a.personnes.get(parent)!.fams.push(id)
+      enfants.forEach(e => a.personnes.get(e)!.famc.push(id))
+    }
+    ;['R', 'A', 'B', 'A1', 'A11', 'A12', 'A13', 'B1', 'B2', 'B3'].forEach(pers)
+    union('FR', 'R', ['A', 'B']); union('FA', 'A', ['A1']); union('FA1', 'A1', ['A11', 'A12', 'A13']); union('FB', 'B', ['B1', 'B2', 'B3'])
+    a.defuntId = 'R'
+    const d = disposer(a, 'R')
+    const naif = 6 * 200 + 5 * ECARTS.horizontal
+    expect(d.largeur).toBeLessThan(naif)
+    expect(Math.min(...d.boites.map(b => b.x))).toBe(0)
+    expect(d.largeur).toBe(Math.max(...d.boites.map(b => b.x + b.mesure.largeur)))
+    for (const x of d.boites) for (const y of d.boites) {
+      if (x === y) continue
+      const disjoint = x.x + x.mesure.largeur <= y.x || y.x + y.mesure.largeur <= x.x
+        || x.y + x.mesure.hauteurTotale <= y.y || y.y + y.mesure.hauteurTotale <= x.y
+      expect(disjoint).toBe(true)
+    }
+    const centre = (id: string) => { const b = d.boites.find(x => x.personneId === id)!; return b.x + b.mesure.largeur / 2 }
+    expect(centre('R')).toBeCloseTo((centre('A') + centre('B')) / 2)   // parent centré sur ses enfants
+  })
+
   it('clés uniques', () => {
     const d = disposer(remariage(), D)
     expect(new Set(d.boites.map(b => b.cle)).size).toBe(d.boites.length)

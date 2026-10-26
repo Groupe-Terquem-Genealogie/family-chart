@@ -120,43 +120,67 @@ export function disposer(arbre: Arbre, centreId: string, replies?: ReadonlySet<s
   let vue = descendance(centre)
   for (let i = chemin.length - 1; i >= 0; i--) vue = { n: chemin[i], ascendant: true, replie: false, enfants: [vue] }
 
-  // 3. Contenus et mesures.
-  const boites: Boite[] = []
-  const liens: Lien[] = []
-  const infos = new Map<Vue, { contenu: ContenuCarte; mesure: Mesure; largeurSousArbre: number }>()
-  const preparer = (v: Vue) => {
+  // 3. Contenus, mesures et ordonnées : chaque enfant sous la zone totale de son parent.
+  const infos = new Map<Vue, { contenu: ContenuCarte; mesure: Mesure; y: number }>()
+  const preparer = (v: Vue, y: number) => {
     const p = arbre.personnes.get(v.n.personneId)!
     const contenu = contenuCarte(p, v.n.role, v.n.unionEntree, v.n.doublon)
     if (v.replie) contenu.replie = true
     const mesure = mesurer(contenu)
-    v.enfants.forEach(preparer)
-    const somme = v.enfants.reduce((s, e) => s + infos.get(e)!.largeurSousArbre, 0) + ECARTS.horizontal * Math.max(0, v.enfants.length - 1)
-    infos.set(v, { contenu, mesure, largeurSousArbre: Math.max(mesure.largeur, somme) })
+    infos.set(v, { contenu, mesure, y })
+    v.enfants.forEach(e => preparer(e, y + mesure.hauteurTotale + ECARTS.vertical))
   }
-  preparer(vue)
+  preparer(vue, 0)
 
-  // 4. Placement : parent centré au-dessus de ses enfants.
-  let hauteur = 0
-  const placer = (v: Vue, gauche: number, y: number): Boite => {
-    const { contenu, mesure, largeurSousArbre } = infos.get(v)!
-    const b: Boite = { cle: v.n.cle, personneId: v.n.personneId, role: v.n.role, unionEntreeId: v.n.unionEntree?.id,
-      x: gauche + (largeurSousArbre - mesure.largeur) / 2, y, mesure, contenu, ascendant: v.ascendant }
-    boites.push(b)
-    hauteur = Math.max(hauteur, y + mesure.hauteurTotale)
-    const yEnfants = y + mesure.hauteurTotale + ECARTS.vertical
-    const somme = v.enfants.reduce((s, e) => s + infos.get(e)!.largeurSousArbre, 0) + ECARTS.horizontal * Math.max(0, v.enfants.length - 1)
-    let g = gauche + (largeurSousArbre - somme) / 2
+  // 4. Abscisses par compactage des contours : chaque sous-arbre est poussé à droite juste ce
+  // qu'il faut pour qu'aucune de ses boîtes ne chevauche, dans la même bande verticale (écart
+  // au-dessus compris, là où passent les liens), une boîte des sous-arbres déjà placés.
+  interface Place { v: Vue; x: number; haut: number; bas: number; largeur: number }
+  const agencer = (v: Vue): Place[] => {
+    const { mesure, y } = infos.get(v)!
+    const places: Place[] = []
+    const racines: Place[] = []
     for (const e of v.enfants) {
-      const be = placer(e, g, yEnfants)
-      g += infos.get(e)!.largeurSousArbre + ECARTS.horizontal
-      const px = b.x + mesure.largeur / 2, py = y + mesure.hauteurDessus + mesure.hauteurBoite
+      const sous = agencer(e)
+      let decalage = places.length ? -Infinity : 0
+      for (const b of sous) for (const a of places) {
+        if (a.haut < b.bas && b.haut < a.bas) decalage = Math.max(decalage, a.x + a.largeur + ECARTS.horizontal - b.x)
+      }
+      if (decalage === -Infinity) decalage = 0
+      for (const b of sous) b.x += decalage
+      places.push(...sous)
+      racines.push(sous[0])
+    }
+    const x = racines.length
+      ? (racines[0].x + racines[racines.length - 1].x + racines[racines.length - 1].largeur) / 2 - mesure.largeur / 2
+      : 0
+    return [{ v, x, haut: y - ECARTS.vertical, bas: y + mesure.hauteurTotale, largeur: mesure.largeur }, ...places]
+  }
+  const places = agencer(vue)
+  const gauche = Math.min(...places.map(p => p.x))
+
+  // 5. Boîtes et liens.
+  const boites: Boite[] = []
+  const liens: Lien[] = []
+  const parVue = new Map<Vue, Boite>()
+  for (const pl of places) {
+    const { contenu, mesure, y } = infos.get(pl.v)!
+    const b: Boite = { cle: pl.v.n.cle, personneId: pl.v.n.personneId, role: pl.v.n.role,
+      unionEntreeId: pl.v.n.unionEntree?.id, x: pl.x - gauche, y, mesure, contenu, ascendant: pl.v.ascendant }
+    boites.push(b)
+    parVue.set(pl.v, b)
+  }
+  for (const pl of places) {
+    const b = parVue.get(pl.v)!
+    for (const e of pl.v.enfants) {
+      const be = parVue.get(e)!
+      const px = b.x + b.mesure.largeur / 2, py = b.y + b.mesure.hauteurDessus + b.mesure.hauteurBoite
       const cx = be.x + be.mesure.largeur / 2, cy = be.y + be.mesure.hauteurDessus
-      const mi = yEnfants - ECARTS.vertical / 2
+      const mi = be.y - ECARTS.vertical / 2
       liens.push({ cle: be.cle, parentCle: b.cle, points: [[px, py], [px, mi], [cx, mi], [cx, cy]] })
     }
-    return b
   }
-  placer(vue, 0, 0)
-
-  return { boites, liens, largeur: infos.get(vue)!.largeurSousArbre, hauteur, centreCle: centre.cle }
+  const largeur = Math.max(...boites.map(b => b.x + b.mesure.largeur))
+  const hauteur = Math.max(...boites.map(b => b.y + b.mesure.hauteurTotale))
+  return { boites, liens, largeur, hauteur, centreCle: centre.cle }
 }
