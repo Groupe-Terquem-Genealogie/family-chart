@@ -1,0 +1,89 @@
+// Contenu et mesure d'une carte, selon les conventions d'affichage de Généatique :
+// mentions de l'étude en rouge au-dessus, identité et événements dans la boîte,
+// mentions en noir et coordonnées en vert en dessous.
+import { CleChamp, estHeritier, Personne, Union } from './modele'
+
+export type Teinte = 'noir' | 'vert' | 'rouge'
+export interface Ligne { texte: string; teinte: Teinte; gras?: boolean }
+export type Role = 'lignee' | 'conjoint'
+export interface ContenuCarte {
+  dessus: Ligne[]
+  boite: Ligne[]
+  dessous: Ligne[]
+  heritier: boolean
+  defunt: boolean
+  role: Role
+  doublon: boolean
+  replie?: boolean
+}
+export interface Mesure { largeur: number; hauteurDessus: number; hauteurBoite: number; hauteurTotale: number }
+
+export const CARTE = { largeur: 200, interligne: 14, marge: 4, croix: 28, carMaxParLigne: 34 }
+
+const MOIS: Record<string, string> = { JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+  JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12' }
+
+export function formaterDate(d?: string): string {
+  if (!d) return ''
+  const m = /^(\d{1,2}) ([A-Z]{3}) (\d{3,4})$/.exec(d.trim())
+  return m && MOIS[m[2]] ? `${m[1].padStart(2, '0')}/${MOIS[m[2]]}/${m[3]}` : d.trim()
+}
+
+/** « , Ville, Dépt, Région, , » → « Ville, Dépt ». */
+export function formaterLieu(l?: string): string {
+  if (!l) return ''
+  const parts = l.split(',').map(s => s.trim())
+  if (parts.length < 3) return parts.filter(Boolean).join(', ')
+  return parts.slice(1, 3).filter(Boolean).join(', ')
+}
+
+export function couper(texte: string, max = CARTE.carMaxParLigne): string[] {
+  const lignes: string[] = []
+  let courante = ''
+  for (let mot of texte.split(/\s+/).filter(Boolean)) {
+    while (mot.length > max) {
+      if (courante) { lignes.push(courante); courante = '' }
+      lignes.push(mot.slice(0, max)); mot = mot.slice(max)
+    }
+    if (!mot) continue
+    if (courante && courante.length + 1 + mot.length > max) { lignes.push(courante); courante = mot }
+    else courante = courante ? `${courante} ${mot}` : mot
+  }
+  if (courante) lignes.push(courante)
+  return lignes
+}
+
+const evenement = (prefixe: string, date?: string, lieu?: string) =>
+  [prefixe, formaterDate(date), formaterLieu(lieu)].filter(Boolean).join(' ')
+
+const ROUGES: CleChamp[] = ['representation', 'representationConj', 'saisi', 'saisie']
+const NOIRS: CleChamp[] = ['celibataire', 'sansPosterite', 'mortEnBasAge', 'regimeMatrimonial', 'profession']
+const VERTS: CleChamp[] = ['adresse', 'adresseComplement', 'codePostal', 'telephoneHeritier', 'email',
+  'adresseConjoint', 'adresse1Conjoint', 'cpConjoint', 'telephoneConjoint']
+
+function lignes(textes: string[], teinte: Teinte, gras?: boolean): Ligne[] {
+  return textes.flatMap(t => couper(t)).map(texte => (gras ? { texte, teinte, gras } : { texte, teinte }))
+}
+
+export function contenuCarte(p: Personne, role: Role, unionEntree?: Union, doublon = false): ContenuCarte {
+  const champs = (cles: CleChamp[]) => cles.map(k => p.champs[k]).filter((v): v is string => !!v)
+  const dessus = lignes(champs(ROUGES), 'rouge', true)
+  if (role === 'conjoint' && unionEntree?.mariage) dessus.push(...lignes([evenement('M', unionEntree.mariage.date, unionEntree.mariage.lieu)], 'noir'))
+
+  const nom = [p.nom, p.prenoms].filter(Boolean).join(' ') || '(sans nom)'
+  const boite = lignes([nom], 'noir', true)
+  if (p.naissance) boite.push(...lignes([evenement('N', p.naissance.date, p.naissance.lieu)], 'noir'))
+  if (p.deces) boite.push(...lignes([evenement('✝', p.deces.date, p.deces.lieu)], 'noir'))
+  if (role === 'conjoint' && unionEntree?.divorce) boite.push(...lignes([evenement('Divorce', unionEntree.divorce.date, unionEntree.divorce.lieu)], 'noir'))
+  if (doublon) boite.push({ texte: 'voir aussi', teinte: 'noir' })
+
+  const dessous = [...lignes(champs(NOIRS), 'noir'), ...lignes(champs(VERTS), 'vert')]
+  return { dessus, boite, dessous, heritier: estHeritier(p), defunt: p.defunt, role, doublon }
+}
+
+export function mesurer(c: ContenuCarte): Mesure {
+  const hauteurDessus = c.dessus.length * CARTE.interligne + (c.defunt ? CARTE.croix : 0)
+  const hauteurBoite = c.boite.length * CARTE.interligne + 2 * CARTE.marge
+  return { largeur: CARTE.largeur, hauteurDessus, hauteurBoite,
+    hauteurTotale: hauteurDessus + hauteurBoite + c.dessous.length * CARTE.interligne }
+}
