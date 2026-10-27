@@ -104,10 +104,26 @@ export function creerVue(conteneur: HTMLElement, obtenirArbre: () => Arbre, opti
         rafraichir({ tree_position: 'inherit' })
       })
     }
+    // Clic simple : sélection et fiche, l'arbre ne bouge pas. Double-clic : recentrage.
     g.on('click', () => {
       selection = b.personneId
-      vue.afficher(b.personneId)
+      marquerSelection()
       ecouteurs.forEach(f => f(b.personneId))
+    })
+    g.on('dblclick', (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()   // sinon d3-zoom zoome aussi au double-clic
+      vue.afficher(b.personneId)
+    })
+  }
+
+  /** Met à jour le cadre de sélection sans recalculer l'arbre. */
+  function marquerSelection() {
+    d3.select(conteneur).selectAll<SVGGElement, DatumBoite>('g.card_cont').each(function (d) {
+      const choisie = d.boite.personneId === selection
+      d3.select(this).classed('gv-selection', choisie).select('rect.gv-boite')
+        .attr('stroke', choisie ? COULEURS.selection : COULEURS.trait)
+        .attr('stroke-width', choisie ? 2.5 : 1)
     })
   }
 

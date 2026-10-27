@@ -78,7 +78,7 @@ describe('creerVue', () => {
     expect(carte(cont, E2).classList.contains('gv-selection')).toBe(false)
   })
 
-  it('clic : sélection et recentrage sur la personne', () => {
+  it('clic simple : sélection et fiche, sans recentrer l’arbre', () => {
     const { cont, vue } = monter()
     const vu = vi.fn()
     vue.surSelection(vu)
@@ -86,6 +86,17 @@ describe('creerVue', () => {
     carte(cont, E2).dispatchEvent(new MouseEvent('click', { bubbles: true }))
     expect(vu).toHaveBeenCalledWith(E2)
     expect(carte(cont, E2).classList.contains('gv-selection')).toBe(true)
+    expect(carte(cont, D).classList.contains('gv-selection')).toBe(false)
+    expect(carte(cont, E2).querySelector('rect.gv-boite')!.getAttribute('stroke-width')).toBe('2.5')
+    expect(presentes(cont).length).toBe(7)   // arbre inchangé
+    expect(vue.centre()).toBe(D)
+  })
+
+  it('double-clic : recentre l’arbre sur la personne', () => {
+    const { cont, vue } = monter()
+    vue.afficher(D, true)
+    carte(cont, E2).dispatchEvent(new MouseEvent('dblclick', { bubbles: true }))
+    expect(vue.centre()).toBe(E2)
     expect(presentes(cont).length).toBe(6)   // ascendants D, C, R + E2, S, H
   })
 
