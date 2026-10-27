@@ -1,7 +1,7 @@
 // Panneau latéral : fiche d'une personne (champs du masque de saisie Généatique) et actions.
 import { Arbre, CleChamp, Evenement, Personne } from '../modele'
 import { Operation } from '../journal'
-import { formaterDate, formaterLieu } from '../carte'
+import { formaterDate, formaterLieu, SITUATIONS } from '../carte'
 import { dateVersGedcom } from '../dates'
 import { opsAjouterConjoint, opsAjouterEnfant, opsAjouterParent, opsDelier, opsModifierFiche, opsSupprimerPersonne, SaisieFiche } from '../edition'
 import { Vue } from '../rendu'
@@ -168,7 +168,7 @@ export function creerPanneau(conteneur: HTMLElement,
       if (gr.titre === 'Dossier') {
         // Une valeur hors liste (« Auteur », variante de casse…) est proposée telle quelle pour ne pas être perdue.
         const situation = p.champs.situation ?? ''
-        const options: [string, string][] = [['', ''], ['Héritier', 'Héritier']]
+        const options: [string, string][] = [['', ''], ...SITUATIONS.map(x => [x.valeur, x.valeur] as [string, string])]
         if (!options.some(([v]) => v === situation)) options.push([situation, situation])
         liste(g, 'situation', 'Situation', options, situation)
       }

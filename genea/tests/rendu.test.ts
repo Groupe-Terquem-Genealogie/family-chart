@@ -55,6 +55,16 @@ describe('creerVue', () => {
     expect(carte(cont, D).querySelector('text.gv-croix')!.classList.contains('gv-halo')).toBe(true)
   })
 
+  it('fond de case selon la situation', () => {
+    const cont = document.createElement('div')
+    document.body.innerHTML = ''
+    document.body.appendChild(cont)
+    const arbre = remariage()
+    arbre.personnes.get(E2)!.champs.situation = 'A saisir TC'
+    creerVue(cont, () => arbre, { transition: 0 }).afficher(D, true)
+    expect(carte(cont, E2).querySelector('rect.gv-boite')!.getAttribute('fill')).toBe('#f4c2c2')
+  })
+
   it('texte raccourci : infobulle avec le texte complet', () => {
     const cont = document.createElement('div')
     document.body.innerHTML = ''
@@ -88,6 +98,7 @@ describe('creerVue', () => {
     expect(carte(cont, E2).classList.contains('gv-selection')).toBe(true)
     expect(carte(cont, D).classList.contains('gv-selection')).toBe(false)
     expect(carte(cont, E2).querySelector('rect.gv-boite')!.getAttribute('stroke-width')).toBe('2.5')
+    expect(carte(cont, E2).querySelector('rect.gv-boite')!.getAttribute('stroke')).toBe('#0aa5b5')   // bleu turquoise
     expect(presentes(cont).length).toBe(7)   // arbre inchangé
     expect(vue.centre()).toBe(D)
   })

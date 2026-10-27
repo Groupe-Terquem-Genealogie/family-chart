@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CARTE, contenuCarte, couper, formaterDate, formaterLieu, mesurer } from '../src/carte'
+import { CARTE, SITUATIONS, contenuCarte, couper, formaterDate, formaterLieu, mesurer } from '../src/carte'
 import { Personne, Union } from '../src/modele'
 
 const pers = (p: Partial<Personne>): Personne =>
@@ -72,6 +72,20 @@ describe('contenuCarte', () => {
   it('lignes longues coupées', () => {
     const c = contenuCarte(pers({ champs: { regimeMatrimonial: 'Sép. de biens le 01/01/1970 Me Prénom NOMFICTIF notaire' } }), 'lignee')
     expect(c.dessous.length).toBe(2)
+  })
+})
+
+describe('couleur de fond selon la situation', () => {
+  it('héritier bleu, situations de suivi en pastel, sinon blanc (sans casse ni accents)', () => {
+    const fond = (situation?: string) => contenuCarte(pers(situation ? { champs: { situation } } : {}), 'lignee').fond
+    expect(fond('Héritier')).toBe('#a9c8ee')
+    expect(fond('A saisir TC')).toBe('#f4c2c2')
+    expect(fond('A envoyer CT Doc-secure')).toBe('#c6ebc5')
+    expect(fond('A envoyer CT courrier')).toBe('#dcc6ef')
+    expect(fond('À traiter généalogie')).toBe('#fcd9ae')
+    expect(fond('Auteur')).toBe('#ffffff')
+    expect(fond()).toBe('#ffffff')
+    expect(SITUATIONS.map(s => s.valeur)).toEqual(['Héritier', 'A saisir TC', 'A envoyer CT Doc-secure', 'A envoyer CT courrier', 'A traiter généalogie'])
   })
 })
 

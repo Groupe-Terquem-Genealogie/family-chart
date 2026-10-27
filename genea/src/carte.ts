@@ -1,7 +1,7 @@
 // Contenu et mesure d'une carte, selon les conventions d'affichage de Généatique :
 // mentions de l'étude en rouge au-dessus, identité et événements dans la boîte,
 // mentions en noir et coordonnées en vert en dessous.
-import { CleChamp, estHeritier, Personne, Union } from './modele'
+import { CleChamp, estHeritier, Personne, sansAccents, Union } from './modele'
 import { dateVersAffichage } from './dates'
 
 export type Teinte = 'noir' | 'vert' | 'rouge'
@@ -13,6 +13,8 @@ export interface ContenuCarte {
   boite: Ligne[]
   dessous: Ligne[]
   heritier: boolean
+  /** Couleur de fond de la case, selon la situation (héritier, suivi du dossier). */
+  fond: string
   defunt: boolean
   role: Role
   doublon: boolean
@@ -21,6 +23,21 @@ export interface ContenuCarte {
 export interface Mesure { largeur: number; hauteurDessus: number; hauteurBoite: number; hauteurTotale: number }
 
 /** lignesBoite : hauteur fixe des cases (nom, naissance, décès, divorce ou « voir aussi »), comme Généatique. */
+/** Valeurs proposées pour Situation et couleur de fond de la case (pastel pour le suivi). */
+export const SITUATIONS: { valeur: string; couleur: string }[] = [
+  { valeur: 'Héritier', couleur: '#a9c8ee' },
+  { valeur: 'A saisir TC', couleur: '#f4c2c2' },
+  { valeur: 'A envoyer CT Doc-secure', couleur: '#c6ebc5' },
+  { valeur: 'A envoyer CT courrier', couleur: '#dcc6ef' },
+  { valeur: 'A traiter généalogie', couleur: '#fcd9ae' },
+]
+export const FOND_DEFAUT = '#ffffff'
+
+export function fondSituation(situation?: string): string {
+  const cle = sansAccents((situation ?? '').trim())
+  return SITUATIONS.find(s => sansAccents(s.valeur) === cle)?.couleur ?? FOND_DEFAUT
+}
+
 export const CARTE = { largeur: 200, interligne: 14, marge: 4, croix: 28, carMaxParLigne: 34, lignesBoite: 4 }
 
 export function formaterDate(d?: string): string {
@@ -91,7 +108,7 @@ export function contenuCarte(p: Personne, role: Role, unionEntree?: Union, doubl
     if (boite.length < CARTE.lignesBoite) boite.push(voirAussi)
     else dessous.unshift(voirAussi)
   }
-  return { dessus, boite, dessous, heritier: estHeritier(p), defunt: p.defunt, role, doublon }
+  return { dessus, boite, dessous, heritier: estHeritier(p), fond: fondSituation(p.champs.situation), defunt: p.defunt, role, doublon }
 }
 
 export function mesurer(c: ContenuCarte): Mesure {

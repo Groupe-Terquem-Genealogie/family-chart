@@ -76,6 +76,13 @@ describe('panneau de fiche', () => {
     expect('naissance' in op.valeurs).toBe(false)
   })
 
+  it('la liste Situation propose les situations de suivi', () => {
+    const { cont, p } = monter()
+    p.ouvrir(H)
+    const options = [...(champ(cont, 'situation') as HTMLSelectElement).options].map(o => o.value)
+    expect(options).toEqual(['', 'Héritier', 'A saisir TC', 'A envoyer CT Doc-secure', 'A envoyer CT courrier', 'A traiter généalogie'])
+  })
+
   it('situation inconnue de la liste (« Auteur ») : conservée à l’enregistrement', () => {
     const { cont, p, journaliser, arbre } = monter()
     arbre.personnes.get(H)!.champs.situation = 'Auteur'

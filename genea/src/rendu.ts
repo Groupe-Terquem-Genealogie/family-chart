@@ -11,7 +11,7 @@ import { Boite, disposer, Disposition } from './disposition'
 import { CARTE, Ligne, Teinte } from './carte'
 
 export const COULEURS = { heritier: '#a9c8ee', fond: '#ffffff', trait: '#333333',
-  noir: '#111111', vert: '#2a8a2a', rouge: '#9b1c1c', selection: '#e07b00' }
+  noir: '#111111', vert: '#2a8a2a', rouge: '#9b1c1c', selection: '#0aa5b5' }   // sélection : bleu turquoise
 const TEINTES: Record<Teinte, string> = { noir: COULEURS.noir, vert: COULEURS.vert, rouge: COULEURS.rouge }
 
 type DatumBoite = TreeDatum & { boite: Boite; aDescendance: boolean }
@@ -85,7 +85,7 @@ export function creerVue(conteneur: HTMLElement, obtenirArbre: () => Arbre, opti
     g.append('rect').attr('class', 'gv-boite').attr('data-personne', b.personneId)
       .attr('x', gauche).attr('y', hautBoite).attr('width', l).attr('height', hb)
       .attr('rx', c.role === 'conjoint' ? 8 : 0)
-      .attr('fill', c.heritier ? COULEURS.heritier : COULEURS.fond)
+      .attr('fill', c.fond)
       .attr('stroke', b.personneId === selection ? COULEURS.selection : COULEURS.trait)
       .attr('stroke-width', b.personneId === selection ? 2.5 : 1)
     c.boite.forEach((ln, i) => texte(hautBoite + CARTE.marge + (i + 1) * il - 3, ln))
